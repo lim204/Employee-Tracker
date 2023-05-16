@@ -20,6 +20,8 @@ const app = express();
 app.listen(3001, () =>
     console.log(`App is ruuning on http://localhost:3001`));
 
+
+// inquirer prompt for start action    
      start()
 
 function start() {
@@ -36,206 +38,106 @@ function start() {
                'add a role',
                'add an employee',
                'update an emploment role',
-               'add a department',
                'Exit'],
         },
-        ]).then((answer) => {
-            
-        
-        })
-}
-// add department function
-function addDepartment() {
-    inquirer
-        .prompt({
-            name: 'name',
-            type: 'input',
-            message: 'enter name of new department'
-        }).then(({ name }) => {
-            const query = 'insert into department(name) values (?)';
-            db.query(query, name, (err, res) => {
-                if (err) throw err;
-                start();
-            })
-        })
-}
+        ]).then((answers) => {
+            const {choices} = answers;
+            if (choices === 'view all departments'){
+                showDepartments ();
+            }
+            if (choices === 'view all roles'){
+                showRoles ();
+            }
+            if (choices === 'view all employees'){
+                showEmployees ();
+            }
+            if (choices === 'add a department'){
+                addDepartment ();
+            }
+            if (choices === 'add a role'){
+                addRole ();
+            }
+            if (choices === 'add an employee'){
+                addEmployee ();
+            }
+            if (choices === 'update an emploment role'){
+                updateEmployee ();
+            }
+            if (choices === 'exit'){
+                connection.end()
+            };
 
-// add employee function
-function addEmployee() {
-    db.query(
-        'select * from employee', (err, empRes) => {
-            const employees = empRes.map(employee => {
-                return employee.first_name + '' + employee.last_name
-            });
-            db.query(
-                'select * from role', (err, roleRes) => {
-                    const roles = roleRes.map(role => {
-                        return role.title;
-                    });
-                    inquirer
-                        .prompt([{
-                            name: 'first_name',
-                            type: 'input',
-                            message: 'Enter the new employee\'s first name:'
-                        },
-                        {
-                            name: 'last_name',
-                            type: 'input',
-                            message: 'Enter the new employee\'s last name:'
-                        },
-                        {
-                            name: 'role_id',
-                            type: 'list',
-                            message: 'Choose the new employees role:',
-                            choices: roles
-                        },
-                        {
-                            name: 'manager_id',
-                            type: 'list',
-                            message: 'Choose the new employee manager:',
-                            choices: employees
-                        }
-                        ]).then((res) => {
-                            const { first_name, last_name } = res;
-                            const manager = empRes.filter(employee => {
-                                return employee.first_name + '' + employee.last_name === res.manager;
-                            })[0];
-                            const role_id = roleRes.filter(role => {
-                                return role.title === res.role;
-                            })[0];
-                            const manager_id = manager ? manager.id : null
-                            db.query('insert into employee set ?',
-                                {
-                                    first_name, last_name, role_id, manager_id
-                                }, (err, result) => {
-                                    if (err) throw err;
-                                }
-                            )
-                          start ();
-                        })
-
-                })
-        }
-    )
-}
-//add role function
-function addRole(){
-    db.query (
-        'select * from department', (err,result => {
-            if (err)throw err;
-            const departments = result.map (department = department.name);
-            inquirer
-                .prompt([
-                    {
-                        name: 'title',
-                        type: 'input',
-                        message: 'Please enter title of new role:'
-                    },
-                    {
-                        name: 'salary',
-                        type: 'input',
-                        message: 'Please enter salary of new role:',
-                        vallidate: salary => {
-                            if (isNaN (salary) || salary < 0) {
-                                return 'please enter a number'
-                            }
-                            return true;
-                        }
-                    },
-                    {
-                        name:'departmnet',
-                        type: 'list',
-                        message: 'what department is it in?',
-                        choice: departments
-                    }
-                ]).then ((res) =>{
-                    const {title} = res ;
-                    const salary = res.salary;
-                    const department_id = res.department_id;
-                })[0];
-                db.query(
-                    'insert into role set ?',
-                    {
-                        title,salary,department_id
-                    },
-                    (err,result) => {
-                        if (err) throw err;
-                        start();
-                    }
-                )
-        })
-    )
-}
-
-//view department function
-function ViewByDepartment (){
-    const query = 'selecct * from department';
-    db.query (query,(err,res)=>{
-        if (err) throw err;
-        console.log (table(toTableFormat(res)));
-        start();
-    });
-};
-//view roles function
-function viewRoles () {
-    const query = 'select * from role';
-    db.query(query, (err,res)=>{
-        if  (err) throw err;
-        console.log (table(toTableFormat(res)));
-        start();
-    });
-};
-//view employees function
-function viewEmployees(){
-    const query = 'select * from employee';
-    db.query(query, (err,res)=>{
-        if  (err) throw err;
-        console.log (table(toTableFormat(res)));
-        start();
-    });
-};
-//uopdate employee roles
-function updateEmpRoles(){
-    const query = 'select *from employee';
-    db.query(query, (err,res)=>{
-        const employees = res.map(employee => {
-            return employee.first_name + '' + employee.last_name;
         });
-        db.query('select * from role', (err,result)=>{
-            const roles = result.map (role =>{
-                return role.title;
-            });
-            inquirer
-                .prompt ([
-                    {
-                        type:'list',
-                        name: 'employee',
-                        message: 'which employee\'s role do you want to update?',
-                        choice: employees   
-                    },
-                    {
-                        type:'list',
-                        name: 'role',
-                        message: 'what\'s employee\'s new role ?',
-                        choice: roles  
-                    },
-                ]).then (answer =>{
-                    const id = result.filter(employee =>{
-                        return employee.first_name + '' + empployee.last_name === answer.employee;  
-                    }) [0]
-                    db.query (
-                        'update employee set role_id = ? where id =?', [role_id,id],(err, result) => {
-                            if  (err) throw err;
-                            start ();
-                        }
-                    )
-                })
-        })
+};
+showDepartments = () => {
+    console.log ('showing all department... \n');
+    const sql = `SELECT department.id AS id, department.name AS department FROM department`;
+
+    connection.promise().query(sql,(err,rows)=>{
+        if (err)throw err;
+        console.table(rows);
+        start();
+    });
+};
+// add department function
+showRoles = () =>{
+    console.log('showing all roles....\n');
+
+    const sql =`SELECT role.id, role.title, department.name AS department FROM role INNER JOIN department ON role.department_id = department.id`;
+
+    connection.promise().query(sql,(err,rows)=>{
+        if (err) throw err;
+        console.table(rows);
+        start();
     })
-}
- //table format
- function toTableFormat (arr){
-    const header = Object.keys (arr [0]);
-    const rows = arr.map(obj => Object.values (obj));
-    return [header,...rows];
- }
+};
+showEmployees = () =>{
+    console.log('showing all employees....\n');
+
+    const sql =`SELECT employee.id, 
+    employee.first_name,
+    employee.last_name, role.title, 
+    department.name AS department, 
+    role.salery,
+    CONCAT (namager.first_name,"", nameager.last_name AS manager 
+    FROM employee
+        lEFT JOIN role ON employee.role_id = role.id,
+        lEFT JOIN department ON department_id = department.id,
+        lEFT JOIN employee namager ON employee.manager_id = manager.id)`;
+
+    connection.promise().query(sql,(err,rows)=>{
+        if (err) throw err;
+        console.table(rows);
+        start();
+    })
+};
+// add a department function
+addDepartment = () =>{
+    inquirer 
+        .prompt([
+            {
+                type: 'input',
+                name: 'addDept',
+                message: 'What department would you like to add',
+                validate: addDept =>{
+                    if (addDept){
+                        return true;
+                    }else{
+                        console.log ('please enter a department');
+                        return false;
+                    }
+                }
+            }
+
+        ])
+        .then (answer =>{
+            const sql = `INSERT INTO department (name)
+            VALUES (?)`;
+            connection.query(sql,answer.addDept,(err,result)=>{
+                if (err) throw err;
+                console.log ('Added' + answer.addDept + 'to departments');
+
+                showDepartments ();
+            });
+        });
+};
