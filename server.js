@@ -1,28 +1,23 @@
 //packages
-const express = require('express');
 const inquirer = require('inquirer');
 const mysql2 = require('mysql2');
-
-const logger = require('morgan');
-
-const app = express();
+// const { exit } = require('process');
 
 //mysql connection
- mysql2.createConnection({
+ const  db = mysql2.createConnection({
     host: '127.0.0.1',
     user: 'root',
-    database: 'employees'
+    database: 'employees_db'
 },
     console.log('connecting successful...')
 );
 
-//connect and check for err
-app.listen(3001, () =>
-    console.log(`App is ruuning on http://localhost:3001`));
+const util = require('util')
+db.query = util.promisify(db.query)
 
 
 // inquirer prompt for start action    
-     start()
+     start();
 
 function start() {
     inquirer
@@ -37,8 +32,8 @@ function start() {
                'add a department',
                'add a role',
                'add an employee',
-               'update an emploment role',
-               'Exit'],
+               'update an emploment role'],
+            //    'Exit'],
         },
         ]).then((answers) => {
             const {choices} = answers;
@@ -63,56 +58,79 @@ function start() {
             if (choices === 'update an emploment role'){
                 updateEmployee ();
             }
-            if (choices === 'exit'){
-                connection.end()
-            };
+            // if (choices === 'exit'){
+            //     connection.end()
+            // };
 
         });
 };
-showDepartments = () => {
+showDepartments = async() => {
     console.log ('showing all department... \n');
-    const sql = `SELECT department.id AS id, department.name AS department FROM department`;
+    const sql = `SELECT * FROM department`;
 
-    connection.promise().query(sql,(err,rows)=>{
-        if (err)throw err;
-        console.table(rows);
-        start();
-    });
+    const result = await db.query(sql);
+    console.table(result)
+    start();
 };
+
 // add department function
-showRoles = () =>{
+showRoles = async () => {
     console.log('showing all roles....\n');
-
-    const sql =`SELECT role.id, role.title, department.name AS department FROM role INNER JOIN department ON role.department_id = department.id`;
-
-    connection.promise().query(sql,(err,rows)=>{
-        if (err) throw err;
-        console.table(rows);
-        start();
-    })
+    const sql =`SELECT * FROM role`;
+    const result = await db.query(sql);
+    console.table(result)
+    start();
 };
-showEmployees = () =>{
+
+showEmployees = async () => {
     console.log('showing all employees....\n');
-
-    const sql =`SELECT employee.id, 
-    employee.first_name,
-    employee.last_name, role.title, 
-    department.name AS department, 
-    role.salery,
-    CONCAT (namager.first_name,"", nameager.last_name AS manager 
-    FROM employee
-        lEFT JOIN role ON employee.role_id = role.id,
-        lEFT JOIN department ON department_id = department.id,
-        lEFT JOIN employee namager ON employee.manager_id = manager.id)`;
-
-    connection.promise().query(sql,(err,rows)=>{
-        if (err) throw err;
-        console.table(rows);
-        start();
-    })
+    const sql =`SELECT * FROM employee`;
+    const result = await db.query(sql);
+    console.table(result)
+    start();
 };
+
+
+// need to review from here 
+// showEmployees = () =>{
+//     console.log('showing all employees....\n');
+
+//     const sql =`SELECT employee.id, 
+//     employee.first_name,
+//     employee.last_name, role.title, 
+//     department.name AS department, 
+//     role.salery,
+//     CONCAT (namager.first_name,"", nameager.last_name AS manager 
+//     FROM employee
+//         lEFT JOIN role ON employee.role_id = role.id,
+//         lEFT JOIN department ON department_id = department.id,
+//         lEFT JOIN employee namager ON employee.manager_id = manager.id)`;
+
+//     connection.promise().query(sql,(err,rows)=>{
+//         if (err) throw err;
+//         console.table(rows);
+//         start();
+//     })
+// };
+
+
+
+
+// // add a department
+// addDepartment = async () => {
+//     console.log('Please add a new Department\n');
+//     const sql =`INSERT INTO department`;
+//     const result = await db.query(sql);
+//     inquirer.prompt([{
+//         name: "department_name",
+//         type: "input",
+//         message: "Please enter the name of the department you want to add to the database."
+//     }])
+//     console.table(result)
+//     start();
+// };
 // add a department function
-addDepartment = () =>{
+addDepartment = async() =>{
     inquirer 
         .prompt([
             {
@@ -130,8 +148,8 @@ addDepartment = () =>{
             }
 
         ])
-        .then (answer =>{
-            const sql = `INSERT INTO department (name)
+        const result = await db.query(sql);
+        const sql = `INSERT INTO department (name)
             VALUES (?)`;
             connection.query(sql,answer.addDept,(err,result)=>{
                 if (err) throw err;
@@ -139,5 +157,37 @@ addDepartment = () =>{
 
                 showDepartments ();
             });
-        });
 };
+
+// add a role  function
+addRole = ()=> {
+    inquirer.prompt([
+        {type:'input',
+        name:'role',
+        message: 'What role do you want to add',
+        validate: addRole => {
+            if (addRole){
+                return true;
+            }else{
+                console.log('please enter a role');
+                return false;
+            }
+        }
+    },
+    {
+        type:'input',
+        name: 'salary',
+        message:'what is the salary of this role',
+        validate:addSalary =>{
+            if (isNaN(addSalary)){
+                return true;
+            }else{
+                console.log('please enter a salary');
+                return false;
+            }
+        }
+    }
+    ]).then (answer =>{
+        const params = [answer.role, answer.salary];
+    })
+}
